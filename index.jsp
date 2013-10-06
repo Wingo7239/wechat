@@ -5,7 +5,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<title>Insert title here</title>
+<title>insert my title, 2013-10-05</title>
 </head>
 <body>
 <jsp:forward page="/Weixin" />
