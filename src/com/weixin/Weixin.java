@@ -24,6 +24,7 @@ import com.weixin.domain.ReplyMusicMessage;
 import com.weixin.domain.ReplyTextMessage;
 import com.weixin.domain.ReplyTuwenMessage;
 import com.weixin.domain.RequestTextMessage;
+import com.weixin.util.JdbcUtil;
 
 /**
  * Servlet implementation class Weixin
@@ -73,12 +74,22 @@ public class Weixin extends HttpServlet {
 		// TODO Auto-generated method stub
 		// 当你用微信给平台发送信息时就会到这里
 		// 回复音乐和图文消息，我都写死了，自己可以根据自己的需要加相应的处理
+		JdbcUtil ju = new JdbcUtil();
 		response.setContentType("text/html;charset=UTF-8");
 		PrintWriter pw = response.getWriter();
 		String wxMsgXml = IOUtils.toString(request.getInputStream(), "utf-8");
 		RequestTextMessage textMsg = null;
 		try {
 			textMsg = getRequestTextMessage(wxMsgXml);
+			// check the user, 
+			// if the user is first time use our wechat, not in the DB,
+			// then add the user into our db
+			// and return welcome to our system.
+			if(!checkUser(textMsg,ju)){ 
+				ju.saveUser(textMsg.getFromUserName());
+				textMsg.setContent("welcome to login wechat sys first time");
+				}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -135,6 +146,12 @@ public class Weixin extends HttpServlet {
 
 		}
 		pw.println(returnXml);
+	}
+	
+	private boolean checkUser(RequestTextMessage rtm, JdbcUtil ju){
+		
+		String userId = rtm.getFromUserName();
+		return ju.getUser(userId);
 	}
 
 	private String checkAuthentication(String signature, String timestamp,
@@ -203,20 +220,15 @@ public class Weixin extends HttpServlet {
 		XStream xstream = new XStream(new DomDriver());
 
 		xstream.alias("xml", RequestTextMessage.class);
-		xstream
-				.aliasField("ToUserName", RequestTextMessage.class,
-						"toUserName");
-		xstream.aliasField("FromUserName", RequestTextMessage.class,
-				"fromUserName");
-		xstream
-				.aliasField("CreateTime", RequestTextMessage.class,
-						"createTime");
+		
+		xstream.aliasField("ToUserName", RequestTextMessage.class,"toUserName");
+		xstream.aliasField("FromUserName", RequestTextMessage.class,"fromUserName");
+		xstream.aliasField("CreateTime", RequestTextMessage.class,"createTime");
 		xstream.aliasField("MsgType", RequestTextMessage.class, "messageType");
 		xstream.aliasField("Content", RequestTextMessage.class, "content");
 		xstream.aliasField("MsgId", RequestTextMessage.class, "msgId");
 
-		RequestTextMessage requestTextMessage = (RequestTextMessage) xstream
-				.fromXML(xml);
+		RequestTextMessage requestTextMessage = (RequestTextMessage) xstream.fromXML(xml);
 		return requestTextMessage;
 	}
 
@@ -234,8 +246,7 @@ public class Weixin extends HttpServlet {
 		XStream xstream = new XStream(new DomDriver());
 		xstream.alias("xml", ReplyTextMessage.class);
 		xstream.aliasField("ToUserName", ReplyTextMessage.class, "toUserName");
-		xstream.aliasField("FromUserName", ReplyTextMessage.class,
-				"fromUserName");
+		xstream.aliasField("FromUserName", ReplyTextMessage.class,"fromUserName");
 		xstream.aliasField("CreateTime", ReplyTextMessage.class, "createTime");
 		xstream.aliasField("MsgType", ReplyTextMessage.class, "messageType");
 		xstream.aliasField("Content", ReplyTextMessage.class, "content");
