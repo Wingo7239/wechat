@@ -1,4 +1,1 @@
-wechat
-======
-
-wechat-java-2012-10-04
+Straightforward Version of wechat API
